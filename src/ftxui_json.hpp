@@ -5,7 +5,14 @@
 #define JSON_TUI_MAIN_UI_HPP
 
 #include <nlohmann/json.hpp>
+#include <ftxui/component/component.hpp>
+#include "expander.hpp"
 
-void DisplayMainUI(const nlohmann::json& json, bool fullscreen);
+namespace ftxui_json {
+	ftxui::Component From(const nlohmann::json& json, bool is_last, int depth, Expander& expander);
+};
+
+
+#include "ftxui_json.сpp"
 
 #endif /* json_tui_main_ui_hpp */

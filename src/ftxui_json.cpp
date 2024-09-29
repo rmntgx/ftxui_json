@@ -1,9 +1,6 @@
 // Copyright 2022 Arthur Sonzogni. All rights reserved.
 // Use of this source code is governed by the MIT license that can be found in
 // the LICENSE file.
-
-#include "main_ui.hpp"
-
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
@@ -13,13 +10,16 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include "button.hpp"
+#include "button.cpp"
 #include "expander.hpp"
+#include "expander.cpp"
 #include "mytoggle.hpp"
+#include "mytoggle.cpp"
 
 using JSON = nlohmann::json;
 using namespace ftxui;
 
-namespace {
+namespace ftxui_json {
 
 Component From(const JSON& json, bool is_last, int depth, Expander& expander);
 Component FromString(const JSON& json, bool is_last);
@@ -432,57 +432,6 @@ Component FromTable(Component prefix,
   return Make<Impl>(prefix, json, is_last, depth, expander);
 }
 
-}  // anonymous namespace
+}  // ftxui_json
 
-void DisplayMainUI(const JSON& json, bool fullscreen) {
-  auto screen_fullscreen = ScreenInteractive::Fullscreen();
-  auto screen_fit = ScreenInteractive::FitComponent();
-  auto& screen = fullscreen ? screen_fullscreen : screen_fit;
-  Expander expander = ExpanderImpl::Root();
-  auto component = From(json, /*is_last=*/true, /*depth=*/0, expander);
-
-  // Wrap it inside a frame, to allow scrolling.
-  component =
-      Renderer(component, [component] { return component->Render() | yframe; });
-
-  Event previous_event;
-  Event next_event;
-  auto wrapped_component = CatchEvent(component, [&](Event event) {
-    previous_event = next_event;
-    next_event = event;
-
-    // 'G' and 'gg -------------------------------------------------------------
-    if (event == Event::Character('G')) {
-      while (component->OnEvent(Event::ArrowUp))
-        ;
-      return true;
-    }
-    if (previous_event == Event::Character('g') &&
-        next_event == Event::Character('g')) {
-      while (component->OnEvent(Event::ArrowDown))
-        ;
-      return true;
-    }
-
-    // Allow the user to quit using 'q' or ESC ---------------------------------
-    if (event == Event::Character('q') || event == Event::Escape) {
-      screen.ExitLoopClosure()();
-      return true;
-    }
-
-    // Convert mouse whell into their corresponding Down/Up events.-------------
-    if (!event.is_mouse())
-      return false;
-    if (event.mouse().button == Mouse::WheelDown) {
-      screen.PostEvent(Event::ArrowDown);
-      return true;
-    }
-    if (event.mouse().button == Mouse::WheelUp) {
-      screen.PostEvent(Event::ArrowUp);
-      return true;
-    }
-    return false;
-  });
-
-  screen.Loop(wrapped_component);
-}
+using namespace ftxui_json;
